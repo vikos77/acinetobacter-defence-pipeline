@@ -1,0 +1,19 @@
+force_strand: FALSE
+maximum_separation: 2
+minimum_core: 1
+minimum_total: 2
+core_genes:
+  - Cyclase
+secondary_genes:
+  - Effector
+neutral_genes:
+  - regulation
+prohibited_genes:
+  - E1-E2
+  - E2
+  - HORMA
+  - JAB
+  - OGG
+  - QueC
+  - TGT
+  - TRIP13

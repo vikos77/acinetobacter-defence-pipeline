@@ -1,0 +1,24 @@
+name: r_analysis
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.2.2
+  - r-tidyverse
+  - r-ggplot2
+  - r-dplyr
+  - r-readr
+  - r-tidyr
+  - r-pheatmap
+  - r-rcolorbrewer
+  - r-gridextra
+  - r-scales
+  - r-knitr
+  - r-rmarkdown
+  - r-patchwork
+  - r-ggrepel
+  - r-reshape2
+  - r-viridis
+  - bioconductor-complexheatmap
+  - pandoc  

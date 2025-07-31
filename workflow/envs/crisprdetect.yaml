@@ -1,0 +1,14 @@
+name: crisprdetect
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - perl
+  - perl-app-cpanminus
+  - perl-bioperl
+  - perl-parallel-forkmanager
+  - blast
+  - emboss
+  - wget
+  - git

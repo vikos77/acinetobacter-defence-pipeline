@@ -1,0 +1,17 @@
+force_strand: FALSE
+maximum_separation: 1
+minimum_core: 1
+minimum_total: 1
+core_genes:
+  - bGSDM
+secondary_genes:
+  - caspase
+  - chat
+  - nacht
+  - peptidase_U41
+  - subtilase
+  - trypsin-like
+neutral_genes:
+  - NA
+prohibited_genes:
+  - NA

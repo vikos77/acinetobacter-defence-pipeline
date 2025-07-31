@@ -1,0 +1,16 @@
+force_strand: FALSE
+maximum_separation: 3
+minimum_core: 5
+minimum_total: 5
+core_genes:
+  - DruA1
+  - DruB1
+  - DruC1
+  - DruD1
+  - DruE1
+secondary_genes:
+  - NA
+neutral_genes:
+  - NA
+prohibited_genes:
+  - NA

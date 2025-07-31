@@ -1,0 +1,19 @@
+force_strand: FALSE
+maximum_separation: 2
+minimum_core: 5
+minimum_total: 5
+core_genes:
+  - typeIV_Cas5
+  - typeIV_Cas6
+  - typeIV_Cas7
+  - typeIV_Cas8
+  - typeIV_RecD
+secondary_genes:
+  - typeIV_Cas11
+  - cas_accessory
+  - cas_adaptation
+  - CRISPR_array
+neutral_genes:
+  - regulation
+prohibited_genes:
+  - typeIV_DinG

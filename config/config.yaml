@@ -1,0 +1,25 @@
+# Sample information - Add the accession ids of samples to be downloaded
+samples:
+  - "NZ_CP038023.1"
+  
+# Tool parameters
+defensefinder:
+  threads: 4
+
+padloc:
+  threads: 4
+
+resfinder:
+  threshold: 0.9
+  coverage: 0.6
+
+crisprcasfinder:
+  installation_path: "resources/CRISPRCasFinder"
+
+blast:
+  evalue: 1e-6
+  identity: 80
+
+hmrg:
+  evalue: "0.005"
+  qcov_hsp_perc: "80"

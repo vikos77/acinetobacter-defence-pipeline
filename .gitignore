@@ -1,0 +1,98 @@
+# =============================================================================
+# BIOINFORMATICS PIPELINE .gitignore
+# =============================================================================
+
+# Large genomic data files
+*.fna
+*.fasta
+*.fas
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.sam
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.gff
+*.gff3
+*.gtf
+
+# Tool installations and databases
+resources/CRISPRCasFinder/
+resources/defensefinder_models/
+resources/resfinder_db/
+resources/ime_db/
+resources/hmrg_db/
+resources/padloc_db/
+resources/genomes/
+
+# Large result directories (keep only key outputs)
+results/*/
+!results/figures/
+!results/consolidated/
+!results/analysis/
+!results/example_outputs/
+
+# Snakemake working files
+.snakemake/
+.snakemake_timestamp
+
+# Conda environments and caches
+.conda/
+*.conda
+environments/*/
+
+# R and RStudio files
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.Renviron
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+logs/
+tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Job scheduler files
+*.slurm
+slurm-*.out
+*.pbs
+*.sub
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Compressed files (unless specifically needed)
+*.tar.gz
+*.zip
+*.tar.bz2
