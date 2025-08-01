@@ -16,23 +16,23 @@ This repository contains a production-ready **Snakemake workflow** that coordina
 ##  Key Technical Features
 
 ### **Scalable Architecture**
-- **1000+ genome analysis capability** with automatic parallel processing
-- **Multi-tool integration** with dependency management via Conda
-- **Modular design** allowing individual component execution
-- **Automated quality control** and result consolidation
+- 1000+ genome analysis capability with automatic parallel processing
+- Multi-tool integration with dependency management via Conda
+- Modular design allowing individual component execution
+- Automated quality control and result consolidation
 
 ### **Comprehensive Analysis Suite**
-- **Defense System Prediction**: DefenseFinder v2.0.2 + PADLOC v2.0.0
+- **Defence System Prediction**: DefenseFinder v2.0.2 + PADLOC v2.0.0
 - **CRISPR-Cas Detection**: Integrated CRISPRCasFinder analysis
 - **Resistance Gene Screening**: ResFinder with custom databases
 - **Mobile Element Analysis**: BLAST-based identification pipelines
 - **Statistical Framework**: Correlation analysis with multiple testing correction
 
 ### **Production-Ready Implementation**
-- **Reproducible environments** using Conda
-- **Error handling** with retry logic for network operations
-- **Resource optimization** with configurable CPU/memory allocation
-- **Automated data consolidation** from individual tool outputs
+- Reproducible environments using Conda
+- Error handling with retry logic for network operations
+- Resource optimization with configurable CPU/memory allocation
+- Automated data consolidation from individual tool outputs
 
 ## Pipeline Architecture
 
@@ -48,7 +48,7 @@ Config File              NCBI E-utilities      Multi-tool Suite      Statistical
                               └─────────────────────────────────────┘
 ```
 
-## 📊 Analysis Scope
+##  Analysis Scope
 
 | Component | Scale | Technical Implementation |
 |-----------|-------|-------------------------|
@@ -135,12 +135,6 @@ rule run_defensefinder:
     """
 ```
 
-### **Data Processing Pipeline**
-1. **Automated genome acquisition** via NCBI E-utilities
-2. **Quality validation** and format standardization
-3. **Parallel tool execution** with environment isolation
-4. **Result parsing** and standardization
-5. **Statistical analysis** with R integration
 
 ## Repository Structure
 
@@ -176,11 +170,11 @@ rule run_defensefinder:
 ## Scientific Applications
 
 This pipeline enables researchers to:
-- **Systematically catalog** defence system diversity across bacterial species
-- **Investigate correlations** between bacterial immunity and resistance mechanisms 
-- **Compare tool performance** for defence system prediction
-- **Analyze mobile element** association patterns
-- **Generate publication-ready** statistical analyses and visualizations
+- Systematically catalog defence system diversity across bacterial species
+- Investigate correlations between bacterial immunity and resistance mechanisms 
+- Compare tool performance for defence system prediction
+- Analyze mobile element association patterns
+- Generate publication-ready statistical analyses and visualizations
 
 
 ## Documentation
