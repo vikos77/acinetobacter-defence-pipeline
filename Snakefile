@@ -309,6 +309,7 @@ rule run_resfinder:
             -db_res {params.db_path}
         """
 
+#Rule to setup CasFinder
 rule setup_crisprcasfinder:
     output:
         flag = touch("resources/crisprcasfinder_ready.flag"),
@@ -348,7 +349,7 @@ rule setup_crisprcasfinder:
         echo "CRISPRCasFinder setup complete at {output.repo_dir}"
         """
 
-# CRISPRCasFinder rule that exactly replicates your successful manual approach
+# CRISPRCasFinder rule
 rule run_crisprcasfinder_combined:
     input:
         genomes = expand("resources/genomes/{accession}.fna", accession=config["samples"]),
@@ -365,8 +366,7 @@ rule run_crisprcasfinder_combined:
     threads: 8
     shell:
         """
-        echo "[$(date +%T)] Exact replication of successful manual approach"
-        
+             
         # Create Snakemake output directory and files
         mkdir -p {params.output_dir}
         
@@ -390,18 +390,18 @@ rule run_crisprcasfinder_combined:
         echo "[$(date +%T)] Combined $(echo '{input.genomes}' | wc -w) genomes"
         echo "Combined file size: $(du -h {output.combined_genomes} | cut -f1)"
         
-        # Step 2: Copy combined genomes INTO CRISPRCasFinder directory (like your manual approach)
+        # Step 2: Copy combined genomes INTO CRISPRCasFinder directory
         echo "[$(date +%T)] Copying combined genomes into CRISPRCasFinder directory..."
         
-        # Create install_test directory inside CRISPRCasFinder (like your manual test)
+        # Create install_test directory inside CRISPRCasFinder
         mkdir -p "{params.crispr_dir}/install_test"
         
-        # Copy combined genomes file to install_test directory (exactly like you did)
+        # Copy combined genomes file to install_test directory
         cp "{output.combined_genomes}" "{params.crispr_dir}/install_test/combined_genomes.fna"
         
         echo "[$(date +%T)] Copied combined genomes to: {params.crispr_dir}/install_test/combined_genomes.fna"
         
-        # Step 3: Change to CRISPRCasFinder directory (exactly like your manual approach)
+        # Step 3: Change to CRISPRCasFinder directory
         echo "[$(date +%T)] Changing to CRISPRCasFinder directory..."
         cd {params.crispr_dir}
         
@@ -409,7 +409,7 @@ rule run_crisprcasfinder_combined:
         echo "[$(date +%T)] Input file exists: $(test -f install_test/combined_genomes.fna && echo 'YES' || echo 'NO')"
         echo "[$(date +%T)] Input file size: $(du -h install_test/combined_genomes.fna 2>/dev/null || echo 'N/A')"
         
-        # Step 4: Run CRISPRCasFinder with relative path (EXACTLY like your successful manual command)
+        # Step 4: Run CRISPRCasFinder with relative path
         echo "[$(date +%T)] Running CRISPRCasFinder with relative paths..."
         echo "Command: perl CRISPRCasFinder.pl -in install_test/combined_genomes.fna -cas -keep"
         
