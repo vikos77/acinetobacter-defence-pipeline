@@ -22,7 +22,8 @@ rule all:
         "results/consolidated/padloc_consolidated.tsv",
         "results/consolidated/resfinder_consolidated.tsv",
         "results/consolidated/ime_consolidated.tsv",
-        "results/consolidated/hmrg_consolidated.tsv", 
+        "results/consolidated/hmrg_consolidated.tsv",
+ 
         # Analysis results
         "results/analysis/defense_figures"
 
@@ -91,10 +92,10 @@ rule setup_defensefinder_models:
         echo "Copying defense-finder-models..."
         if [ -d ~/.macsyfinder/models/defense-finder-models ]; then
             cp -r ~/.macsyfinder/models/defense-finder-models {output.models_dir}/
-            echo "✅ defense-finder-models copied successfully"
+            echo "defense-finder-models copied successfully"
             echo "   Files: $(find {output.models_dir}/defense-finder-models -type f | wc -l)"
         else
-            echo "❌ Warning: defense-finder-models not found in ~/.macsyfinder/models/"
+            echo "Warning: defense-finder-models not found in ~/.macsyfinder/models/"
             mkdir -p {output.defense_models_dir}
         fi
         
@@ -102,10 +103,10 @@ rule setup_defensefinder_models:
         echo "Copying CasFinder models..."
         if [ -d ~/.macsyfinder/models/CasFinder ]; then
             cp -r ~/.macsyfinder/models/CasFinder {output.models_dir}/
-            echo "✅ CasFinder models copied successfully"
+            echo "CasFinder models copied successfully"
             echo "   Files: $(find {output.models_dir}/CasFinder -type f | wc -l)"
         else
-            echo "❌ Warning: CasFinder not found in ~/.macsyfinder/models/"
+            echo "Warning: CasFinder not found in ~/.macsyfinder/models/"
             mkdir -p {output.casfinder_dir}
         fi
         
@@ -123,7 +124,7 @@ rule setup_defensefinder_models:
         echo "  Total model files (.hmm): $(find {output.models_dir} -name '*.hmm' 2>/dev/null | wc -l)"
         
         echo ""
-        echo "✅ DefenseFinder models setup complete!"
+        echo "DefenseFinder models setup complete!"
         echo "   Models ready for use with: --models-dir {output.models_dir}"
         """
         
@@ -174,7 +175,7 @@ rule run_padloc_wrapper_style:
         """
         # Activate your working environment
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda activate padloc  # Use your working test environment
+        conda activate padloc
         
         # Create output directory
         mkdir -p {params.output_dir}
@@ -195,7 +196,7 @@ rule run_padloc_wrapper_style:
         echo "[$(date +%T)] Extracting protein IDs from FASTA..."
         grep ">" {output.prodigal_faa} | sed 's/>//' > {params.output_dir}/protein_ids.txt
         
-        # Step 3: Create a properly formatted GFF file (exactly like your wrapper)
+        # Step 3: Create a properly formatted GFF file
         echo "[$(date +%T)] Creating properly formatted GFF file..."
         awk -v OFS="\\t" '
         BEGIN {{
@@ -207,7 +208,7 @@ rule run_padloc_wrapper_style:
             current_id = 1;
         }}
         /^#/ {{
-            print $0;  # Print comment lines unchanged
+            print $0;
             next;
         }}
         $3 == "CDS" {{
@@ -224,13 +225,13 @@ rule run_padloc_wrapper_style:
         # Clean up
         rm {params.output_dir}/protein_ids.txt
         
-        # Step 4: Run PADLOC with the fixed files (exactly like your wrapper)
+        # Step 4: Run PADLOC with the fixed files
         echo "[$(date +%T)] Running PADLOC analysis..."
         
-        # Change to the output directory (important - like your wrapper)
+        # Change to the output directory
         cd {params.output_dir}
         
-        # Run PADLOC without --outdir flag (like your wrapper)
+        # Run PADLOC without --outdir flag
         padloc --faa {params.accession}_prodigal.faa \
                --gff {params.accession}_fixed.gff \
                --cpu {threads}
