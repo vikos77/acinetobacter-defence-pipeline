@@ -14,7 +14,7 @@ rule all:
         expand("results/padloc/{accession}/{accession}_padloc.csv", accession=config["samples"]),
         expand("results/hmrg_blast/{accession}/{accession}_hmrg.tblastn", accession=config["samples"]),
         
-        # CRISPRCasFinder - Combined approach then individual extraction
+        # CRISPRCasFinder - Combined approach
         "results/crisprcasfinder_combined/result.json",  # Combined analysis result
         
         #Consolidated results
