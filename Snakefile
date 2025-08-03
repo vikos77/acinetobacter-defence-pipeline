@@ -131,7 +131,7 @@ rule setup_defensefinder_models:
 rule run_defensefinder_bioconda:
     input:
         genome = "resources/genomes/{accession}.fna",
-        models_ready = "resources/defensefinder_models_ready.flag"  # Depends on models setup
+        models_ready = "resources/defensefinder_models_ready.flag"  # Depends on model setup
     output:
         systems = "results/defensefinder/{accession}/{accession}_defense_finder_systems.tsv",
         genes = "results/defensefinder/{accession}/{accession}_defense_finder_genes.tsv"
@@ -410,7 +410,7 @@ rule run_crisprcasfinder_combined:
             # Clean up temporary files
             rm -rf temp_analysis "$RESULTS_DIR"
         else
-            # Handle case where no CRISPRs/Cas genes were found (normal biological result)
+            # Handle case where no CRISPRs/Cas genes were found
             echo "No CRISPR/Cas systems detected - generating summary for completed analysis"
             echo '{{
                 "status": "completed",
@@ -533,13 +533,13 @@ rule prepare_hmrg_db:
         if [ $(grep -c '^>' {output.processed_fasta}) -eq 0 ]; then
             echo "Warning: Processed file has no sequences!"
             echo "First few lines of original file:"
-            head -10 "$BACMET_FILE"
+            head -5 "$BACMET_FILE"
             echo "First few lines of processed file:"
-            head -10 {output.processed_fasta}
+            head -5 {output.processed_fasta}
         fi
         """
 
-# Rule to run HMRG tblastn on individual genomes (like IME approach)
+# Rule to run HMRG tblastn on individual genomes
 rule run_hmrg_tblastn:
     input:
         genome = "resources/genomes/{accession}.fna",
@@ -763,7 +763,7 @@ rule consolidate_ime_blast:
             with open(output.consolidated, 'w') as f:
                 f.write("genome_id\time_id\time_name\time_source\tpercent_identity\talignment_length\tevalue\n")
 
-# Rule to consolidate HMRG results (simple approach like IME)
+# Rule to consolidate HMRG results
 rule consolidate_hmrg:
     input:
         hmrg_files = expand("results/hmrg_blast/{accession}/{accession}_hmrg.tblastn", 
