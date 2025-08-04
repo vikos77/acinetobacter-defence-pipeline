@@ -1,6 +1,8 @@
 # Sample information - Add the accession ids of samples to be downloaded
 samples:
-  - "NZ_CP038023.1"
+  - "NZ_CP019041.1"
+  - "NZ_CP091358.1"
+  - "NZ_CP078045.1"
   
 # Tool parameters
 defensefinder:

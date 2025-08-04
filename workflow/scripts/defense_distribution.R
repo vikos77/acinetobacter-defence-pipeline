@@ -129,44 +129,20 @@ figure12 <- hist_defensefinder +
 ggsave(
   filename = file.path(figures_dir, "figure12_combined.png"),
   plot     = figure12,
-  width    = 16,    # adjust to taste
-  height   = 6,
+  width    = 12,    # adjust to taste
+  height   = 10,
   dpi      = 300
 )
 ggsave(
   filename = file.path(figures_dir, "figure12_combined.pdf"),
   plot     = figure12,
-  width    = 16,
-  height   = 6
+  width    = 12,
+  height   = 10
 )
 
 #-----------------------------------------------------------------
 # Circos Plot and Fisher's Exact Test Matrix
 #-----------------------------------------------------------------
-
-# Define color palette for defense systems
-system_colors <- c(
-  "RM"        = "#E41A1C",  # red
-  "Cas"       = "#377EB8",  # blue
-  "RosmerTA"  = "#4DAF4A",  # green
-  "PD-T7-5"   = "#984EA3",  # purple
-  "Gabija"    = "#FF7F00",  # orange
-  "CBASS"     = "#FFFF33",  # yellow
-  "Septu"     = "#A65628",  # brown
-  "Retron"    = "#F781BF",  # pink
-  "Gao_Qat"   = "#999999",  # grey
-  "DRT"       = "#66C2A5",  # teal
-  "TgvAB"      = "#A6CEE3",  # light blue
-  "Paris"     = "#1F78B4",  # dark blue
-  "PD-T4-5"   = "#B2DF8A",  # light green
-  "AbiJ"      = "#33A02C",  # dark green
-  "Lamassu-Fam"   = "#FB9A99",  # light red
-  "AbiH"      = "#E31A1C",  # dark red
-  "RloC"      = "#FDBF6F",  # light orange
-  "SspBCDE"   = "#FF7F00",  # dark orange
-  "DS-1"    = "#CAB2D6",  # light purple
-  "Prometheus"     = "#6A3D9A"   # dark purple
-)
 
 # Use DefenseFinder data for co-occurrence analysis (can be changed to PADLOC if preferred)
 system_order <- defense_type_counts %>% 
@@ -189,8 +165,13 @@ presence_matrix <- defense_systems_data %>%
   column_to_rownames("Genome_ID")
 
 # Panel A: Circos Plot
-set.seed(123) # For reproducibility
+set.seed(777) # For reproducibility
 
+# Generate colors using a colorblind-friendly palette
+system_colors_dynamic <- setNames(
+  viridis::viridis_pal(option = "turbo")(length(system_order)),
+  system_order
+)
 # Calculate co-occurrence counts
 cooccur_counts <- crossprod(as.matrix(presence_matrix))
 
@@ -202,17 +183,17 @@ filtered_counts[filtered_counts < threshold] <- 0
 # Create the circos plot as a PNG file
 png(file.path(figures_dir, "temp_circos_plot.png"), width = 2000, height = 1600, res = 200)
 circos.clear()
-circos.par(gap.after = 8)
-par(mar = c(1, 1, 5, 1))
+circos.par(gap.after = 2, start.degree = 90)
+par(mar = c(1, 1, 2, 1))
 
 # Plot the chords diagram
 chordDiagram(
   filtered_counts,
-  grid.col = system_colors,
-  transparency = 0.5,
+  grid.col = system_colors_dynamic,
+  transparency = 0.6,
   directional = 0,
   annotationTrack = c("grid", "axis"),
-  preAllocateTracks = list(track.height = 0.1)
+  preAllocateTracks = list(track.height = 0.15)
 )
 
 # Add labels to the sectors
@@ -223,27 +204,31 @@ circos.trackPlotRegion(
     ylim = get.cell.meta.data("ylim")
     sector.name = get.cell.meta.data("sector.index")
     
+    # Add system labels
     circos.text(
-      mean(xlim), ylim[1] + 0.1, 
+      mean(xlim), ylim[1] + 0.2, 
       sector.name, 
       facing = "clockwise",
       niceFacing = TRUE,
       adj = c(0, 0.5),
-      cex = 1.2,
-      font = 2
+      cex = 0.9,
+      font = 2,  # Bold font
+      family = "Times New Roman"
     )
   }, 
   bg.border = NA
 )
 
-# Add title
-mtext("A. Defence System Co-occurrence Network", 
-      side = 3, adj = 0, line = 1, cex = 1.5, font = 2)
-
+# Add title with Times New Roman
+title(paste("A.", "Defence System Co-occurrence Network"), 
+      line = 0.5,  
+      cex.main = 1.4, 
+      font.main = 2,
+      family = "Times New Roman")
 # Add legend directly
-legend(x = 1.1, y = 0.1, 
-       legend = names(system_colors),
-       fill = system_colors,
+legend(x = 1.02, y = -0.1, 
+       legend = names(system_colors_dynamic),
+       fill = system_colors_dynamic,
        title = "Defence Systems",
        cex = 0.8,
        xpd = TRUE

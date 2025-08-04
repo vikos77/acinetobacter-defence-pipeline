@@ -52,7 +52,7 @@ rule download_genome:
         while [ $attempt -le $max_attempts ]; do
             echo "Attempt $attempt of $max_attempts for {params.accession}"
             
-            # Use EDirect pipeline: esearch -> efetch (most reliable method)
+            # Use EDirect pipeline: esearch -> efetch 
             esearch -db nucleotide -query {params.accession} | efetch -format fasta > {output}
             
             # Check if file has content and valid FASTA format
@@ -179,7 +179,7 @@ rule run_padloc_with_wrapper:
     threads: 4
     shell:
         """
-        # Activate your working environment
+        # Activate the working environment
         source $(conda info --base)/etc/profile.d/conda.sh
         conda activate padloc
         
