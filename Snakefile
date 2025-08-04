@@ -33,25 +33,30 @@ rule download_genome:
         "resources/genomes/{accession}.fna"
     params:
         accession = "{accession}"
+    conda:
+        "workflow/envs/edirect.yaml"
     shell:
         """
-        # Create a directory for the genome if it doesn't exist
+        # Create directory
         mkdir -p resources/genomes
         
-        # Add a random delay between 1-3 seconds to avoid rate limiting
+       	#This is an optional step which is required if there are different versions of efetch available       
+        export PATH="${{CONDA_PREFIX}}/bin:$PATH"
+        
+        # Add delay for rate limiting
         sleep $((1 + RANDOM % 3))
         
-        # Download the genome using NCBI's efetch utility with retry logic
         max_attempts=3
         attempt=1
         
         while [ $attempt -le $max_attempts ]; do
             echo "Attempt $attempt of $max_attempts for {params.accession}"
             
-            ~/edirect/efetch -db nucleotide -id {params.accession} -format fasta > {output}
+            # Use EDirect pipeline: esearch -> efetch (most reliable method)
+            esearch -db nucleotide -query {params.accession} | efetch -format fasta > {output}
             
-            # Check if file has content
-            if [ -s {output} ]; then
+            # Check if file has content and valid FASTA format
+            if [ -s {output} ] && grep -q "^>" {output}; then
                 echo "Successfully downloaded {params.accession}"
                 break
             else
@@ -62,11 +67,12 @@ rule download_genome:
         done
         
         # If all attempts failed, exit with error
-        if [ ! -s {output} ]; then
+        if [ ! -s {output} ] || ! grep -q "^>" {output}; then
             echo "Failed to download {params.accession} after $max_attempts attempts"
             exit 1
         fi
         """
+
 rule setup_defensefinder_models:
     output:
         models_dir = directory("resources/defensefinder_models"),
@@ -158,7 +164,7 @@ rule run_defensefinder_bioconda:
         echo "DefenseFinder analysis complete for {wildcards.accession}"
         """
 
-rule run_padloc_wrapper_style:
+rule run_padloc_with_wrapper:
     input:
         genome = "resources/genomes/{accession}.fna"
     output:
