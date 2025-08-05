@@ -76,13 +76,25 @@ git clone https://github.com/vikos77/acinetobacter-defence-pipeline.git
 cd acinetobacter-defence-pipeline
 ```
 
-2. **Configure your analysis:**
+2. **Install Snakemake**
+```bash
+# 2.1 Create a new conda environment
+conda create -n snakemake_env -c conda-forge -c bioconda snakemake
+
+# 2.2 Activate the environment
+conda activate snakemake_env
+
+# 2.3 Test the installation
+snakemake --help
+```
+
+3. **Configure your analysis:**
 ```bash
 # Edit the configuration file with your genome accessions
 nano config/config.yaml
 ```
 
-3. **Run the complete pipeline:**
+4. **Run the complete pipeline:**
 ```bash
 # Dry run to check workflow
 snakemake --dry-run
