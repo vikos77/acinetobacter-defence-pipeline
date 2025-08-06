@@ -189,10 +189,7 @@ This pipeline enables researchers to:
 
 ## Documentation
 
-- **[Installation Guide](docs/INSTALLATION.md)** - Detailed setup instructions
-- **[Tutorial](docs/TUTORIAL.md)** - Step-by-step analysis workflow
-- **[Configuration Reference](docs/CONFIG.md)** - Complete parameter documentation
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Installation Guide](docs/config_reference.md)** - Step-by-step analysis workflow
 
 ## 🤝 Contributing
 
