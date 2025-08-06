@@ -102,8 +102,6 @@ snakemake --dry-run
 # Execute with 8 cores
 snakemake --cores 8 --use-conda
 
-# For cluster execution
-snakemake --cluster "sbatch" --cores 50
 ```
 
 ### Configuration
@@ -177,7 +175,7 @@ rule run_defensefinder:
 - **OS**: Linux/macOS (tested on Ubuntu 24.04 LTS)
 
 ### **Estimated Runtime**
-- **Single genome**: 5-7 minutes
+- **Single genome**: 5-7 minutes (depends on the genome size)
 
 ## Scientific Applications
 
