@@ -164,6 +164,7 @@ rule run_defensefinder:
 │   ├── consolidated/             # Merged tool outputs
 │   └── analysis/                 # Statistical results
 └── docs/                         # Detailed documentation
+└── resources/                    # Databases and Downloaded genomes
 ```
 
 ## Computational Requirements
@@ -191,13 +192,6 @@ This pipeline enables researchers to:
 
 - **[Installation Guide](docs/config_reference.md)** - Step-by-step analysis workflow
 
-## 🤝 Contributing
-
-Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
-- Code style conventions
-- Testing requirements
-- Documentation standards
-- Issue reporting procedures
 
 ## Citation
 
