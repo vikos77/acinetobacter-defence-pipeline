@@ -53,7 +53,7 @@ rule download_genome:
             echo "Attempt $attempt of $max_attempts for {params.accession}"
             
             # Use EDirect pipeline: esearch -> efetch 
-            esearch -db nucleotide -query {params.accession} | efetch -format fasta > {output} 2>/dev/null || true
+            (esearch -db nucleotide -query {params.accession} | efetch -format fasta) > {output} 2>/dev/null || true
             
             # Check if file has content and valid FASTA format
             if [ -s {output} ] && grep -q "^>" {output}; then
