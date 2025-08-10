@@ -3,6 +3,10 @@ samples:
   - "NZ_CP019041.1"
   - "NZ_CP091358.1"
   - "NZ_CP078045.1"
+  - "NZ_CP048014.1"
+  - "NZ_CP070518.1"
+  - "NZ_CP027658.1"
+  - "NZ_CP139270.1"
   
 # Tool parameters
 defensefinder:

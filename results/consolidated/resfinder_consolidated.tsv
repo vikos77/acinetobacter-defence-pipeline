@@ -1,7 +1,7 @@
 Genome_ID	Resistance gene	Identity	Alignment Length/Gene Length	Coverage	Position in reference	Contig	Position in contig	Phenotype	Accession no.
 NZ_CP019041.1	aadA2b	99.87	780/780	100.0	1..780	NZ_CP019041.1 Acinetobacter junii strain 65 chromosome, complete genome	2307246..2308025	Spectinomycin, Streptomycin	D43625
 NZ_CP091358.1	aph(6)-Id	100.0	837/837	100.0	1..837	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3847513..3848349	Streptomycin	M28829
-NZ_CP091358.1	aph(3')-Ia	99.88	816/816	100.0	1..816	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	2775966..2776781	Kanamycin, Neomycin, Kanamycin, Unknown Aminoglycoside, Neomycin, Kanamycin, Lividomycin, Paromomycin, Ribostamycin	X62115
+NZ_CP091358.1	aph(3')-Ia	99.88	816/816	100.0	1..816	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	2775966..2776781	Kanamycin, Neomycin, Neomycin, Kanamycin, Lividomycin, Paromomycin, Ribostamycin, Unknown Aminoglycoside, Kanamycin	X62115
 NZ_CP091358.1	aph(3'')-Ib	100.0	803/804	99.87562189054728	2..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846711..3847513	Streptomycin	AF024602
 NZ_CP091358.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846710..3847513	Streptomycin	AF321551
 NZ_CP091358.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846710..3847513	Streptomycin	AF313472
@@ -35,3 +35,7 @@ NZ_CP078045.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP078045.1 Acinetobacter
 NZ_CP078045.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP078045.1 Acinetobacter lwoffii strain AL_065 chromosome, complete genome	1261606..1262409	Streptomycin	AF321550
 NZ_CP078045.1	sul2	99.51	816/816	99.50980392156865	1..816	NZ_CP078045.1 Acinetobacter lwoffii strain AL_065 chromosome, complete genome	1272594..1273405	Sulfamethoxazole	AY232670
 NZ_CP078045.1	sul2	99.51	816/816	99.50980392156865	1..816	NZ_CP078045.1 Acinetobacter lwoffii strain AL_065 chromosome, complete genome	1272594..1273405	Sulfamethoxazole	AY034138
+NZ_CP070518.1	blaOXA-323	100.0	822/822	100.0	1..822	NZ_CP070518.1 Acinetobacter calcoaceticus strain FDAARGOS_1218 chromosome, complete genome	241604..242425	Unknown Beta-lactam	KF203097
+NZ_CP027658.1	blaOXA-500	99.88	822/822	100.0	1..822	NZ_CP027658.1 Acinetobacter pittii strain Ap-W20 chromosome, complete genome	2967305..2968126	Unknown Beta-lactam	JMNQ01000002
+NZ_CP139270.1	blaADC-25	91.93	1153/1152	99.91319444444444	1..1152	NZ_CP139270.1 Acinetobacter pittii strain HCG62 chromosome, complete genome	1283544..1284695	Unknown Beta-lactam	EF016355
+NZ_CP139270.1	blaOXA-506	100.0	822/822	100.0	1..822	NZ_CP139270.1 Acinetobacter pittii strain HCG62 chromosome, complete genome	2280738..2281559	Unknown Beta-lactam	KU571454

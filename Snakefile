@@ -44,7 +44,7 @@ rule download_genome:
         export PATH="${{CONDA_PREFIX}}/bin:$PATH"
         
         # Add delay for rate limiting
-        sleep $((1 + RANDOM % 3))
+        sleep $((7 + RANDOM % 11))
         
         max_attempts=3
         attempt=1
@@ -53,7 +53,7 @@ rule download_genome:
             echo "Attempt $attempt of $max_attempts for {params.accession}"
             
             # Use EDirect pipeline: esearch -> efetch 
-            esearch -db nucleotide -query {params.accession} | efetch -format fasta > {output}
+            esearch -db nucleotide -query {params.accession} | efetch -format fasta > {output} 2>/dev/null || true
             
             # Check if file has content and valid FASTA format
             if [ -s {output} ] && grep -q "^>" {output}; then
