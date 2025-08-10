@@ -1,7 +1,7 @@
 Genome_ID	Resistance gene	Identity	Alignment Length/Gene Length	Coverage	Position in reference	Contig	Position in contig	Phenotype	Accession no.
 NZ_CP019041.1	aadA2b	99.87	780/780	100.0	1..780	NZ_CP019041.1 Acinetobacter junii strain 65 chromosome, complete genome	2307246..2308025	Spectinomycin, Streptomycin	D43625
 NZ_CP091358.1	aph(6)-Id	100.0	837/837	100.0	1..837	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3847513..3848349	Streptomycin	M28829
-NZ_CP091358.1	aph(3')-Ia	99.88	816/816	100.0	1..816	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	2775966..2776781	Kanamycin, Neomycin, Neomycin, Kanamycin, Lividomycin, Paromomycin, Ribostamycin, Unknown Aminoglycoside, Kanamycin	X62115
+NZ_CP091358.1	aph(3')-Ia	99.88	816/816	100.0	1..816	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	2775966..2776781	Kanamycin, Neomycin, Kanamycin, Neomycin, Kanamycin, Lividomycin, Paromomycin, Ribostamycin, Unknown Aminoglycoside	X62115
 NZ_CP091358.1	aph(3'')-Ib	100.0	803/804	99.87562189054728	2..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846711..3847513	Streptomycin	AF024602
 NZ_CP091358.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846710..3847513	Streptomycin	AF321551
 NZ_CP091358.1	aph(3'')-Ib	99.88	804/804	100.0	1..804	NZ_CP091358.1 Acinetobacter baumannii strain AB181-VUB chromosome, complete genome	3846710..3847513	Streptomycin	AF313472
