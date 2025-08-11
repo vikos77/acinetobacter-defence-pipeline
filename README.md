@@ -110,8 +110,8 @@ The pipeline is controlled via `config/config.yaml`:
 
 ```yaml
 samples:
-  - "GCF_000005825.2"  # Example: A. baumannii ATCC 17978
-  - "GCF_000746645.1"  # Add your genome accessions here
+  - "NZ_CP048014.1"  # Example: A. baumannii genome
+  - "NZ_CP078045.1"  # Add your genome accessions here
 
 # Tool parameters
 resfinder:
@@ -122,14 +122,6 @@ blast:
   evalue: 0.005      # E-value cutoff
   identity: 80       # Minimum identity percentage
 ```
-
-## Technical Implementation
-
-### **Workflow Management**
-- **Snakemake framework** for reproducible, scalable analysis
-- **Conda integration** for automatic environment management
-- **Parallel execution** with intelligent resource allocation
-- **Checkpointing** for robust long-running analyses
 
 ### **Tool Integration Strategy**
 ```python
@@ -167,15 +159,7 @@ rule run_defensefinder:
 └── resources/                    # Databases and Downloaded genomes
 ```
 
-## Computational Requirements
-
-### **Minimum System Requirements**
-- **CPU**: 4+ cores (8+ recommended for large datasets)
-- **RAM**: 8GB (16GB recommended) 
-- **Storage**: 50GB+ (scales with dataset size)
-- **OS**: Linux/macOS (tested on Ubuntu 24.04 LTS)
-
-### **Estimated Runtime**
+## **Estimated Runtime**
 - **Single genome**: 5-7 minutes (depends on the genome size)
 
 ## Scientific Applications
@@ -198,12 +182,15 @@ This pipeline enables researchers to:
 If you use this pipeline in your research, please cite:
 
 ```bibtex
-@software{muthuraman2025acinetobacter,
-  title={Acinetobacter Defense Systems Analysis Pipeline},
-  author={Muthuraman, Vigneshwaran and Shehreen, Saadlee},
+@article{muthuraman2025acinetobacter,
+  title={Adaptive trade-offs between niche-driven defence system selection and horizontal
+  gene transfer suggests clinical success in Acinetobacter spp},
+  author={Vigneshwaran Muthuraman, Proyash Roy, Paul Dean, Bruno Silvester Lopes,
+  Saadlee Shehreen},
   year={2025},
-  url={https://github.com/vikos77/acinetobacter-defence-pipeline},
-  version={1.0.0}
+  journal={bioRxiv},
+  doi={10.1101/2025.08.01.668115},
+  url={https://www.biorxiv.org/content/10.1101/2025.08.01.668115v1}
 }
 ```
 
