@@ -7,7 +7,13 @@ samples:
   - "NZ_CP070518.1"
   - "NZ_CP027658.1"
   - "NZ_CP139270.1"
-  
+  - "NC_021505.1"
+  - "NZ_CP014205.2"
+  - "NZ_AP017922.1"
+  - "NZ_CP077083.1"
+  - "NZ_CP077092.1"
+  - "NZ_CP035088.1"
+  - "NC_008027.1"
 # Tool parameters
 defensefinder:
   threads: 4
