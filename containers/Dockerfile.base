@@ -1,0 +1,56 @@
+# Base image with all heavy dependencies and models
+FROM mambaorg/micromamba:1.5.1 as base
+
+WORKDIR /app
+
+# Switch to root for system setup
+USER root
+RUN apt-get update && apt-get install -y \
+    wget curl git build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user with matching host UID/GID for better permissions
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g $GROUP_ID appgroup && \
+    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash appuser
+
+# Create directories and set ownership
+RUN mkdir -p /app/models /app/data /app/results && \
+    chown -R appuser:appgroup /app
+
+# Switch to app user
+USER appuser
+
+# Install packages (this is the slow part that we want to cache)
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+    defense-finder=2.0.0 \
+    macsyfinder=2.1.4 \
+    hmmer>=3.1 \
+    python=3.10 \
+    && micromamba clean --all --yes
+
+# Download models (this is the very slow part we want to cache)
+RUN micromamba run -n base defense-finder update --models-dir /app/models
+
+# Create entrypoint script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'exec micromamba run -n base defense-finder "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Set proper permissions for model directory
+RUN chmod -R 755 /app/models
+
+# Production stage
+FROM base as production
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["--help"]
+
+# Development stage - minimal layer on top of base
+FROM base as development
+ENV DEVELOPMENT_MODE=true
+# Mount points for development
+VOLUME ["/app/pipeline", "/app/output"]
+WORKDIR /app/pipeline
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["--help"]

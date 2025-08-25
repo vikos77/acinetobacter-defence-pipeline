@@ -1,0 +1,21 @@
+# DefenseFinder analysis container
+FROM acinetobacter-base:latest
+
+# Switch to root for installations
+USER root
+
+# Install DefenseFinder and dependencies
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+    defense-finder=2.0.0 \
+    hmmer \
+    prodigal \
+    && micromamba clean --all --yes
+
+# Switch back to app user
+USER appuser
+
+# Test installation
+RUN micromamba run -n base defense-finder --help
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["defense-finder", "--help"]

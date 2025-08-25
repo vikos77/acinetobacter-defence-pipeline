@@ -1,0 +1,46 @@
+# Snakemake coordinator container
+FROM mambaorg/micromamba:1.5.1
+
+WORKDIR /app
+
+# Switch to root for system setup
+USER root
+RUN apt-get update && apt-get install -y \
+    wget curl git build-essential docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user with matching host UID/GID for better permissions
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g $GROUP_ID appgroup && \
+    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash appuser && \
+    usermod -aG docker appuser
+
+# Create directories and set ownership
+RUN mkdir -p /app/pipeline /app/data /app/results && \
+    chown -R appuser:appgroup /app
+
+# Switch to app user
+USER appuser
+
+# Install Snakemake and Python dependencies
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+    snakemake-minimal=7.32.4 \
+    python=3.10 \
+    pandas \
+    pyyaml \
+    docker-py \
+    && micromamba clean --all --yes
+
+# Copy pipeline files
+COPY --chown=appuser:appgroup . /app/pipeline/
+
+# Create entrypoint script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'cd /app/pipeline' >> /app/entrypoint.sh && \
+    echo 'exec micromamba run -n base snakemake "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+WORKDIR /app/pipeline
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["--help"]

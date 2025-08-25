@@ -1,0 +1,62 @@
+# CRISPRCasFinder analysis container
+FROM mambaorg/micromamba:1.5.1
+
+WORKDIR /app
+
+# Switch to root for system setup
+USER root
+RUN apt-get update && apt-get install -y \
+    wget curl git build-essential \
+    default-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user with matching host UID/GID for better permissions
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g $GROUP_ID appgroup && \
+    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash appuser
+
+# Create directories and set ownership
+RUN mkdir -p /app/data /app/results /app/CRISPRCasFinder && \
+    chown -R appuser:appgroup /app
+
+# Switch to app user
+USER appuser
+
+# Install CRISPRCasFinder dependencies
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+    python=3.10 \
+    wget \
+    curl \
+    git \
+    java-jdk \
+    parallel \
+    perl-app-cpanminus \
+    hmmer \
+    emboss \
+    blast \
+    perl-bioperl-core \
+    perl-xml-simple \
+    perl-digest-md5 \
+    vmatch \
+    muscle \
+    prodigal \
+    mamba \
+    macsyfinder=2.0 \
+    && micromamba clean --all --yes
+
+# Clone and setup CRISPRCasFinder repository
+RUN git clone https://github.com/dcouvin/CRISPRCasFinder.git /app/CRISPRCasFinder
+
+# Create entrypoint script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'cd /app/CRISPRCasFinder' >> /app/entrypoint.sh && \
+    echo 'exec micromamba run -n base "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Expose data directories as volumes
+VOLUME ["/app/data", "/app/results"]
+
+WORKDIR /app/CRISPRCasFinder
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["perl", "CRISPRCasFinder.pl", "--help"]

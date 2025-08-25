@@ -1,0 +1,17 @@
+# Use the existing DefenseFinder container as base
+FROM acinetobacter-defensefinder:dev
+
+# Switch to root to modify files
+USER root
+
+# Patch the DefenseFinder source to skip version check
+RUN sed -i 's/last_version_df = check_last_version_models()/last_version_df = m.version  # Patched to skip network check/' /opt/conda/lib/python3.10/site-packages/defense_finder_cli/main.py
+
+# Verify the patch was applied
+RUN grep -n "Patched to skip network check" /opt/conda/lib/python3.10/site-packages/defense_finder_cli/main.py
+
+# Switch back to app user
+USER appuser
+
+# Test that DefenseFinder still works (with proper PATH)
+RUN bash -c "export PATH=/opt/conda/bin:\$PATH && defense-finder --help"

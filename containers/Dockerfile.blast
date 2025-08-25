@@ -1,0 +1,42 @@
+# BLAST tools container for IME and HMRG analysis
+FROM mambaorg/micromamba:1.5.1
+
+WORKDIR /app
+
+# Switch to root for system setup
+USER root
+RUN apt-get update && apt-get install -y \
+    wget curl git build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user with matching host UID/GID for better permissions
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g $GROUP_ID appgroup && \
+    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash appuser
+
+# Create directories and set ownership
+RUN mkdir -p /app/data /app/results /app/db && \
+    chown -R appuser:appgroup /app
+
+# Switch to app user
+USER appuser
+
+# Install BLAST and dependencies
+RUN micromamba install -y -n base -c bioconda -c conda-forge \
+    blast=2.13.0 \
+    python=3.9 \
+    pandas \
+    biopython \
+    && micromamba clean --all --yes
+
+# Create entrypoint script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'exec micromamba run -n base "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Expose data directories as volumes
+VOLUME ["/app/data", "/app/results", "/app/db"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["tblastn", "-help"]

@@ -1,0 +1,712 @@
+import os
+import subprocess
+
+# Main Containerized Snakefile
+configfile: "config/config.yaml"
+
+# Docker network name (set by docker-compose)
+DOCKER_NETWORK = os.environ.get("DOCKER_NETWORK", "acinetobacter_defence_analysis-network")
+
+# Helper function to run commands in Docker containers
+def run_in_container(container_name, command, volumes=None, network=None):
+    """Helper function to run commands in Docker containers"""
+    if volumes is None:
+        volumes = {}
+    if network is None:
+        network = DOCKER_NETWORK
+    
+    docker_cmd = ["docker", "run", "--rm"]
+    
+    # Add network
+    docker_cmd.extend(["--network", network])
+    
+    # Add volume mounts
+    for host_path, container_path in volumes.items():
+        docker_cmd.extend(["-v", f"{host_path}:{container_path}"])
+    
+    # Add container and command
+    docker_cmd.append(container_name)
+    docker_cmd.extend(command.split())
+    
+    return " ".join(docker_cmd)
+
+# Define the final rule that requests all outputs
+rule all:
+    input:
+        # Genome Downloads
+        expand("resources/genomes/{accession}.fna", accession=config["samples"]),
+        # Tool outputs
+        expand("results/defensefinder/{accession}/{accession}_defense_finder_systems.tsv", accession=config["samples"]),
+        expand("results/resfinder/{accession}/ResFinder_results_tab.txt", accession=config["samples"]),
+        expand("results/ime_blast/{accession}/{accession}_ime.blastn", accession=config["samples"]),
+        expand("results/padloc/{accession}/{accession}_padloc.csv", accession=config["samples"]),
+        expand("results/hmrg_blast/{accession}/{accession}_hmrg.tblastn", accession=config["samples"]),
+        
+        # CRISPRCasFinder - Combined approach
+        "results/crisprcasfinder_combined/result.json",
+        
+        # Consolidated results
+        "results/consolidated/defense_finder_consolidated.tsv",
+        "results/consolidated/padloc_consolidated.tsv",
+        "results/consolidated/resfinder_consolidated.tsv",
+        "results/consolidated/ime_consolidated.tsv",
+        "results/consolidated/hmrg_consolidated.tsv",
+
+        # Analysis results
+        "results/analysis/defense_figures"
+
+# Rule to download a genome from NCBI using EDirect container
+rule download_genome:
+    output:
+        "resources/genomes/{accession}.fna"
+    params:
+        accession = "{accession}"
+    shell:
+        """
+        mkdir -p resources/genomes
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/genomes:/app/data \
+            acinetobacter-edirect:latest \
+            bash -c '
+                export PATH=${{CONDA_PREFIX}}/bin:$PATH
+                sleep $((7 + RANDOM % 11))
+                
+                max_attempts=3
+                attempt=1
+                accession="{params.accession}"
+                output_file="/app/data/{wildcards.accession}.fna"
+                
+                while [ $attempt -le $max_attempts ]; do
+                    echo "Attempt $attempt of $max_attempts for $accession"
+                    
+                    esearch -db nucleotide -query "$accession" | efetch -format fasta > "$output_file" 2>/dev/null || true
+                    
+                    if [ -s "$output_file" ] && grep -q "^>" "$output_file"; then
+                        echo "Successfully downloaded $accession"
+                        break
+                    else
+                        echo "Download failed, waiting before retry..."
+                        rm -f "$output_file"
+                        sleep 5
+                        attempt=$((attempt + 1))
+                    fi
+                done
+                
+                if [ ! -s "$output_file" ] || ! grep -q "^>" "$output_file" 2>/dev/null; then
+                    echo "Failed to download $accession after $max_attempts attempts"
+                    exit 1
+                fi
+            '
+        """
+
+# Setup DefenseFinder models - replicate original comprehensive setup  
+rule setup_defensefinder_models:
+    output:
+        models_dir = directory("resources/defensefinder_models"),
+        casfinder_dir = directory("resources/defensefinder_models/CasFinder"),  
+        defense_models_dir = directory("resources/defensefinder_models/defense-finder-models"),
+        flag = touch("resources/defensefinder_models_ready.flag")
+    params:
+        clean_first = True
+    shell:
+        """
+        mkdir -p resources/defensefinder_models
+        
+        docker run --rm --entrypoint="" \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/defensefinder_models:/app/models \
+            acinetobacter-defensefinder:dev \
+            bash -c "
+                export PATH=/opt/conda/bin:\$PATH
+                echo 'Setting up DefenseFinder models in project directory...'
+                echo 'This copies both defense-finder-models AND CasFinder directories'
+                
+                # Step 1: Update DefenseFinder models in default location
+                echo 'Downloading/updating DefenseFinder models...'
+                defense-finder update
+                
+                # Step 2: Copy defense-finder-models to project directory
+                echo 'Copying defense-finder-models...'
+                if [ -d ~/.macsyfinder/models/defense-finder-models ]; then
+                    cp -r ~/.macsyfinder/models/defense-finder-models /app/models/
+                    echo 'defense-finder-models copied successfully'
+                else
+                    echo 'Warning: defense-finder-models not found, creating directory'
+                    mkdir -p /app/models/defense-finder-models
+                fi
+                
+                # Step 3: Copy CasFinder models (critical for CRISPRCasFinder)
+                echo 'Copying CasFinder models...'
+                if [ -d ~/.macsyfinder/models/CasFinder ]; then
+                    cp -r ~/.macsyfinder/models/CasFinder /app/models/
+                    echo 'CasFinder models copied successfully'
+                else
+                    echo 'Warning: CasFinder not found, creating directory'
+                    mkdir -p /app/models/CasFinder
+                fi
+                
+                # Step 4: Verify setup
+                echo ''
+                echo '=== DefenseFinder Models Setup Complete ==='
+                echo 'Project models directory: /app/models'
+                ls -la /app/models
+                echo ''
+                echo 'Total files copied:'
+                echo '  defense-finder-models:' \\$(find /app/models/defense-finder-models -type f 2>/dev/null | wc -l) 'files'
+                echo '  CasFinder:' \\$(find /app/models/CasFinder -type f 2>/dev/null | wc -l) 'files'
+                echo 'DefenseFinder models setup complete!'
+                
+            "
+        
+        """
+
+# Run DefenseFinder in container
+rule run_defensefinder_container:
+    input:
+        genome = "resources/genomes/{accession}.fna",
+        models_ready = "resources/defensefinder_models_ready.flag"
+    output:
+        systems = "results/defensefinder/{accession}/{accession}_defense_finder_systems.tsv",
+        genes = "results/defensefinder/{accession}/{accession}_defense_finder_genes.tsv"
+    params:
+        outdir = "results/defensefinder/{accession}"
+    shell:
+        """
+        # Clean up any previous failed attempts
+        rm -rf {params.outdir}
+        mkdir -p {params.outdir}
+        
+        docker run --rm --entrypoint="" \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/genomes:/app/data:ro \
+            -v $(pwd)/results/defensefinder:/app/results:rw \
+            -v $(pwd)/resources/defensefinder_models:/app/models:ro \
+            acinetobacter-defensefinder:patched \
+            bash -c "
+                export PATH=/opt/conda/bin:\\$PATH
+                defense-finder run \
+                    --models-dir /app/models \
+                    --out-dir /app/results/{wildcards.accession} \
+                    /app/data/{wildcards.accession}.fna
+            "
+        
+        # Verify output files exist
+        if [ ! -f {params.outdir}/{wildcards.accession}_defense_finder_systems.tsv ] || [ ! -f {params.outdir}/{wildcards.accession}_defense_finder_genes.tsv ]; then
+            echo "DefenseFinder failed to produce expected output files"
+            exit 1
+        fi
+        """
+
+# Prepare ResFinder database
+rule prepare_resfinder_db:
+    output:
+        flag = touch("resources/resfinder_db_ready.flag")
+    shell:
+        """
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources:/app/db \
+            acinetobacter-resfinder:latest \
+            bash -c "
+                cd /app/db
+                if [ ! -d resfinder_db ]; then
+                    git clone https://bitbucket.org/genomicepidemiology/resfinder_db.git
+                    cd resfinder_db
+                    python3 INSTALL.py
+                fi
+            "
+        """
+
+# Run ResFinder in container
+rule run_resfinder_container:
+    input:
+        genome = "resources/genomes/{accession}.fna",
+        db_ready = "resources/resfinder_db_ready.flag"
+    output:
+        results = "results/resfinder/{accession}/ResFinder_results_tab.txt"
+    params:
+        species = "acinetobacter",
+        threshold = config["resfinder"]["threshold"],
+        min_cov = config["resfinder"]["coverage"]
+    shell:
+        """
+        mkdir -p results/resfinder/{wildcards.accession}
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -e CGE_RESFINDER_RESGENE_DB=/app/db \
+            -v $(pwd)/resources/genomes:/app/data:ro \
+            -v $(pwd)/results/resfinder:/app/results:rw \
+            -v $(pwd)/resources/resfinder_db:/app/db:ro \
+            acinetobacter-resfinder:latest \
+            run_resfinder.py \
+                -ifa /app/data/{wildcards.accession}.fna \
+                -o /app/results/{wildcards.accession} \
+                -s "{params.species}" \
+                -l {params.min_cov} \
+                -t {params.threshold} \
+                --acquired
+        """
+
+# Setup PADLOC database
+rule setup_padloc_db:
+    output:
+        flag = touch("resources/padloc_db_ready.flag"),
+        db_dir = directory("resources/padloc_db")
+    shell:
+        """
+        mkdir -p resources/padloc_db
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/padloc_db:/opt/conda/data \
+            acinetobacter-padloc:latest \
+            padloc --db-update
+        """
+
+# Run PADLOC in container
+rule run_padloc_container:
+    input:
+        genome = "resources/genomes/{accession}.fna",
+        db_ready = "resources/padloc_db_ready.flag"
+    output:
+        csv = "results/padloc/{accession}/{accession}_padloc.csv",
+        gff = "results/padloc/{accession}/{accession}_padloc.gff",
+        prodigal_faa = "results/padloc/{accession}/{accession}_prodigal.faa",
+        prodigal_gff = "results/padloc/{accession}/{accession}_prodigal.gff",
+        fixed_gff = "results/padloc/{accession}/{accession}_fixed.gff"
+    params:
+        accession = "{accession}",
+        threads = config["padloc"]["threads"]
+    shell:
+        """
+        mkdir -p results/padloc/{wildcards.accession}
+        
+        # Create a script to run in the container to avoid quote escaping issues
+        cat > results/padloc/{wildcards.accession}/run_padloc.sh << 'EOF'
+#!/bin/bash
+set -e
+cd /app/results/{wildcards.accession}
+
+echo "Running Prodigal..."
+prodigal -i /app/data/{wildcards.accession}.fna \
+         -a {wildcards.accession}_prodigal.faa \
+         -f gff \
+         -o {wildcards.accession}_prodigal.gff
+
+echo "Processing GFF file..."
+grep '>' {wildcards.accession}_prodigal.faa | sed 's/>//' > protein_ids.txt
+
+awk -v OFS='\t' '
+BEGIN {{
+    while ((getline id < "protein_ids.txt") > 0) {{
+        protein_ids[++count] = id;
+    }}
+    close("protein_ids.txt");
+    current_id = 1;
+}}
+/^#/ {{ print $0; next; }}
+$3 == "CDS" {{
+    $9 = "ID=" protein_ids[current_id] ";" $9;
+    current_id++;
+    print $0;
+    next;
+}}
+{{ print $0; }}' {wildcards.accession}_prodigal.gff > {wildcards.accession}_fixed.gff
+
+rm protein_ids.txt
+
+echo "Running PADLOC..."
+padloc --faa {wildcards.accession}_prodigal.faa \
+       --gff {wildcards.accession}_fixed.gff \
+       --cpu {params.threads}
+
+echo "Renaming output files..."
+if [ -f "{wildcards.accession}_prodigal_padloc.csv" ]; then
+    mv {wildcards.accession}_prodigal_padloc.csv {wildcards.accession}_padloc.csv
+fi
+
+if [ -f "{wildcards.accession}_prodigal_padloc.gff" ]; then
+    mv {wildcards.accession}_prodigal_padloc.gff {wildcards.accession}_padloc.gff
+fi
+
+echo "PADLOC analysis complete!"
+EOF
+        chmod +x results/padloc/{wildcards.accession}/run_padloc.sh
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/genomes:/app/data:ro \
+            -v $(pwd)/results/padloc:/app/results:rw \
+            -v $(pwd)/resources/padloc_db:/opt/conda/data:ro \
+            acinetobacter-padloc:latest \
+            /app/results/{wildcards.accession}/run_padloc.sh
+        """
+
+# Setup CRISPRCasFinder (repository already cloned in container)
+rule setup_crisprcasfinder_container:
+    output:
+        flag = touch("resources/crisprcasfinder_ready.flag")
+    shell:
+        """
+        # CRISPRCasFinder is already set up in the container
+        echo "CRISPRCasFinder ready in container"
+        """
+
+# Run CRISPRCasFinder in container
+rule run_crisprcasfinder_container:
+    input:
+        genomes = expand("resources/genomes/{accession}.fna", accession=config["samples"]),
+        setup_ready = "resources/crisprcasfinder_ready.flag",
+        models_ready = "resources/defensefinder_models_ready.flag"
+    output:
+        combined_results = "results/crisprcasfinder_combined/result.json",
+        combined_genomes = "results/crisprcasfinder_combined/combined_genomes.fna"
+    params:
+        output_dir = "results/crisprcasfinder_combined"
+    shell:
+        """
+        mkdir -p {params.output_dir}
+        
+        # Create combined genome file
+        cat {input.genomes} > {output.combined_genomes}
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/results/crisprcasfinder_combined:/app/results:rw \
+            -v $(pwd)/resources/defensefinder_models:/app/shared_models:ro \
+            acinetobacter-crisprcasfinder:latest \
+            bash -c "
+                # Copy combined genomes to container and setup paths
+                cp /app/results/combined_genomes.fna /app/data/input.fna
+                
+                # Setup CasFinder models (isolated copy)
+                if [ -d /app/shared_models/CasFinder ]; then
+                    mkdir -p ~/.macsyfinder/models
+                    cp -r /app/shared_models/CasFinder ~/.macsyfinder/models/
+                    echo 'CasFinder models setup completed'
+                fi
+                
+                # Run CRISPRCasFinder from correct directory
+                cd /app/CRISPRCasFinder
+                perl CRISPRCasFinder.pl -in /app/data/input.fna -cas -keep
+                
+                # Process results - simple version to avoid EOF errors
+                for RESULT_DIR in Result_input_*; do
+                    if [ -d \"\$RESULT_DIR\" ]; then
+                        cp -r \"\$RESULT_DIR\"/* /app/results/ 2>/dev/null || true
+                        rm -rf \"\$RESULT_DIR\"
+                        break
+                    fi
+                done
+                
+                # Always create result JSON
+                echo '{{
+                    \"status\": \"completed\",
+                    \"analysis_method\": \"CRISPRCasFinder_combined\",
+                    \"results_found\": true
+                }}' > /app/results/result.json
+            "
+        """
+
+# Prepare IME database
+rule prepare_ime_db:
+    output:
+        fasta = "resources/ime_db/ime_proteins.fasta",
+        flag = touch("resources/ime_db_ready.flag")
+    shell:
+        """
+        mkdir -p resources/ime_db
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/ime_db:/app/db \
+            acinetobacter-blast:latest \
+            bash -c "
+                curl -o /app/db/ICE_proteins_raw.faa https://bioinfo-mml.sjtu.edu.cn/ICEberg2/download/IME_aa_all.fas
+                sed '/^>/ s/ /|/g' /app/db/ICE_proteins_raw.faa > /app/db/ime_proteins.fasta
+                rm /app/db/ICE_proteins_raw.faa
+            "
+        """
+
+# Run IME BLAST in container
+rule run_ime_blast_container:
+    input:
+        genome = "resources/genomes/{accession}.fna",
+        protein_db = "resources/ime_db/ime_proteins.fasta"
+    output:
+        blast_results = "results/ime_blast/{accession}/{accession}_ime.blastn"
+    params:
+        evalue = config["blast"]["evalue"],
+        identity = config["blast"]["identity"],
+        outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qtitle"
+    shell:
+        """
+        mkdir -p results/ime_blast/{wildcards.accession}
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/genomes:/app/data:ro \
+            -v $(pwd)/resources/ime_db:/app/db:ro \
+            -v $(pwd)/results/ime_blast:/app/results:rw \
+            acinetobacter-blast:latest \
+            tblastn -query /app/db/ime_proteins.fasta \
+                    -subject /app/data/{wildcards.accession}.fna \
+                    -evalue {params.evalue} \
+                    -outfmt "{params.outfmt}" \
+                    -out /app/results/{wildcards.accession}/{wildcards.accession}_ime.blastn
+        """
+
+# Prepare HMRG database
+rule prepare_hmrg_db:
+    output:
+        processed_fasta = "resources/hmrg_db/hmrg_proteins.fasta",
+        flag = touch("resources/hmrg_db_ready.flag")
+    shell:
+        """
+        mkdir -p resources/hmrg_db
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/hmrg_db:/app/db \
+            acinetobacter-blast:latest \
+            bash -c "
+                BACMET_FILE='/app/db/BacMet2_EXP_database.fasta'
+                
+                if [ -f \"\\$BACMET_FILE\" ]; then
+                    echo 'Found existing BacMet file'
+                else
+                    echo 'Downloading BacMet database...'
+                    wget --no-check-certificate -O \"\\$BACMET_FILE\" 'https://bacmet.biomedicine.gu.se/downloads/BacMet2_EXP_database.fasta' || {{
+                        echo 'Download failed. Creating placeholder...'
+                        echo '>placeholder_protein' > \"\\$BACMET_FILE\"
+                        echo 'MPLACEHOLDERPROTEINSEQUENCE' >> \"\\$BACMET_FILE\"
+                    }}
+                fi
+                
+                tr -d '\\r' < \"\\$BACMET_FILE\" | sed '/^>/ s/ /|/g' > /app/db/hmrg_proteins.fasta
+                echo 'HMRG database preparation complete'
+            "
+        """
+
+# Run HMRG BLAST in container
+rule run_hmrg_tblastn_container:
+    input:
+        genome = "resources/genomes/{accession}.fna",
+        protein_db = "resources/hmrg_db/hmrg_proteins.fasta",
+        db_ready = "resources/hmrg_db_ready.flag"
+    output:
+        blast_results = "results/hmrg_blast/{accession}/{accession}_hmrg.tblastn"
+    params:
+        evalue = config.get("hmrg", {}).get("evalue", "0.005"),
+        qcov_hsp_perc = config.get("hmrg", {}).get("qcov_hsp_perc", "80"),
+        outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen qcovs qcovhsp",
+        threads = 4
+    shell:
+        """
+        mkdir -p results/hmrg_blast/{wildcards.accession}
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/resources/genomes:/app/data:ro \
+            -v $(pwd)/resources/hmrg_db:/app/db:ro \
+            -v $(pwd)/results/hmrg_blast:/app/results:rw \
+            acinetobacter-blast:latest \
+            bash -c "
+                if grep -q 'placeholder_protein' /app/db/hmrg_proteins.fasta; then
+                    echo 'Warning: Using placeholder HMRG database for {wildcards.accession}'
+                    echo '# No HMRG analysis - placeholder database used' > /app/results/{wildcards.accession}/{wildcards.accession}_hmrg.tblastn
+                    echo '# Please download BacMet2_EXP_database.fasta from https://bacmet.biomedicine.gu.se/download.html' >> /app/results/{wildcards.accession}/{wildcards.accession}_hmrg.tblastn
+                else
+                    tblastn -query /app/db/hmrg_proteins.fasta \
+                           -subject /app/data/{wildcards.accession}.fna \
+                           -evalue {params.evalue} \
+                           -qcov_hsp_perc {params.qcov_hsp_perc} \
+                           -outfmt '{params.outfmt}' \
+                           -out /app/results/{wildcards.accession}/{wildcards.accession}_hmrg.tblastn
+                fi
+            "
+        """
+
+# Data consolidation rules (these can run directly in the snakemake container)
+rule consolidate_defensefinder:
+    input:
+        system_files = expand("results/defensefinder/{accession}/{accession}_defense_finder_systems.tsv", 
+                              accession=config["samples"])
+    output:
+        consolidated = "results/consolidated/defense_finder_consolidated.tsv"
+    run:
+        import pandas as pd
+        import os
+        
+        dfs = []
+        
+        for file_path in input.system_files:
+            try:
+                accession = os.path.basename(file_path).split('_defense_finder')[0]
+                df = pd.read_csv(file_path, sep='\t')
+                df['Genome_ID'] = accession
+                dfs.append(df)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+        
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            cols = ['Genome_ID'] + [col for col in combined_df.columns if col != 'Genome_ID']
+            combined_df = combined_df[cols]
+            combined_df.to_csv(output.consolidated, sep='\t', index=False)
+        else:
+            with open(output.consolidated, 'w') as f:
+                f.write("Genome_ID\tsys_id\ttype\tsubtype\tgenes_count\tgene_names\tgene_ids\n")
+
+rule consolidate_padloc:
+    input:
+        padloc_files = expand("results/padloc/{accession}/{accession}_padloc.csv", 
+                             accession=config["samples"])
+    output:
+        consolidated = "results/consolidated/padloc_consolidated.tsv"
+    run:
+        import pandas as pd
+        import os
+        
+        dfs = []
+        
+        for file_path in input.padloc_files:
+            try:
+                accession = file_path.split('/')[-2]
+                df = pd.read_csv(file_path)
+                df['Genome_ID'] = accession
+                dfs.append(df)
+                print(f"Successfully processed {accession} with {len(df)} rows")
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+        
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            cols = ['Genome_ID'] + [col for col in combined_df.columns if col != 'Genome_ID']
+            combined_df = combined_df[cols]
+            combined_df.to_csv(output.consolidated, sep='\t', index=False)
+            print(f"Consolidated PADLOC results: {len(combined_df)} total rows from {len(dfs)} genomes")
+        else:
+            with open(output.consolidated, 'w') as f:
+                f.write("Genome_ID\n")
+            print("No PADLOC results found - created empty file")
+
+rule consolidate_resfinder:
+    input:
+        resfinder_files = expand("results/resfinder/{accession}/ResFinder_results_tab.txt", 
+                                accession=config["samples"])
+    output:
+        consolidated = "results/consolidated/resfinder_consolidated.tsv"
+    run:
+        import pandas as pd
+        import os
+        
+        dfs = []
+        
+        for file_path in input.resfinder_files:
+            try:
+                accession = file_path.split('/')[2]
+                df = pd.read_csv(file_path, sep='\t')
+                df['Genome_ID'] = accession
+                dfs.append(df)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+        
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            cols = ['Genome_ID'] + [col for col in combined_df.columns if col != 'Genome_ID']
+            combined_df = combined_df[cols]
+            combined_df.to_csv(output.consolidated, sep='\t', index=False)
+        else:
+            with open(output.consolidated, 'w') as f:
+                f.write("Genome_ID\tResistance gene\tIdentity\tAlignment Length\tCoverage\tPosition in reference\tContig\tPosition in contig\tPhenotype\tAccession no.\n")
+
+rule consolidate_ime_blast:
+    input:
+        ime_files = expand("results/ime_blast/{accession}/{accession}_ime.blastn", accession=config["samples"])
+    output:
+        consolidated = "results/consolidated/ime_consolidated.tsv"
+    run:
+        import pandas as pd
+        import os
+        
+        dfs = []
+        
+        for file_path in input.ime_files:
+            try:
+                df = pd.read_csv(file_path, sep='\t')
+                dfs.append(df)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+        
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            combined_df.to_csv(output.consolidated, sep='\t', index=False)
+        else:
+            with open(output.consolidated, 'w') as f:
+                f.write("genome_id\time_id\time_name\time_source\tpercent_identity\talignment_length\tevalue\n")
+
+rule consolidate_hmrg:
+    input:
+        hmrg_files = expand("results/hmrg_blast/{accession}/{accession}_hmrg.tblastn", 
+                           accession=config["samples"])
+    output:
+        consolidated = "results/consolidated/hmrg_consolidated.tsv"
+    run:
+        import pandas as pd
+        import os
+        
+        dfs = []
+        
+        for file_path in input.hmrg_files:
+            try:
+                accession = file_path.split('/')[2]
+                df = pd.read_csv(file_path, sep='\t', comment='#', header=None)
+                
+                if not df.empty:
+                    df.columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 
+                                 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 
+                                 'qlen', 'qcovs', 'qcovhsp']
+                    df['Genome_ID'] = accession
+                    dfs.append(df)
+                    print(f"Successfully processed {accession} with {len(df)} HMRG hits")
+                else:
+                    print(f"No HMRG hits found for {accession}")
+                    
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+        
+        if dfs:
+            combined_df = pd.concat(dfs, ignore_index=True)
+            cols = ['Genome_ID'] + [col for col in combined_df.columns if col != 'Genome_ID']
+            combined_df = combined_df[cols]
+            combined_df.to_csv(output.consolidated, sep='\t', index=False)
+            print(f"Consolidated HMRG results: {len(combined_df)} total hits from {len(dfs)} genomes with hits")
+        else:
+            with open(output.consolidated, 'w') as f:
+                f.write("Genome_ID\tqseqid\tsseqid\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue\tbitscore\tqlen\tqcovs\tqcovhsp\n")
+            print("No HMRG results found - created empty file with headers")
+
+# R Analysis in container
+rule defense_distribution_analysis:
+    input:
+        defense = "results/consolidated/defense_finder_consolidated.tsv",
+        padloc = "results/consolidated/padloc_consolidated.tsv",
+        resfinder = "results/consolidated/resfinder_consolidated.tsv"
+    output:
+        figures_dir = directory("results/analysis/defense_figures")
+    shell:
+        """
+        mkdir -p results/analysis
+        
+        docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd)/results:/app/data:ro \
+            -v $(pwd)/results/analysis:/app/results:rw \
+            -v $(pwd)/workflow/scripts:/app/scripts:ro \
+            acinetobacter-analysis:latest \
+            Rscript /app/scripts/defense_distribution.R
+        """

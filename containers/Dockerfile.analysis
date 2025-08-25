@@ -1,0 +1,54 @@
+# Optimized R analysis container using Rocker as base
+FROM rocker/tidyverse:4.2.2
+
+# Switch to root for package installation
+USER root
+
+# Install system dependencies for additional R packages
+RUN apt-get update && apt-get install -y \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libfontconfig1-dev \
+    libcairo2-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    pandoc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional R packages not included in tidyverse
+RUN R -e "install.packages(c('pheatmap', 'RColorBrewer', 'gridExtra', 'scales', 'knitr', 'rmarkdown', 'patchwork', 'ggrepel', 'reshape2', 'viridis', 'circlize', 'png'), repos='https://cran.rstudio.com/')"
+
+# Install BiocManager (ComplexHeatmap skipped - can be added later if needed)
+RUN R -e "install.packages('BiocManager', repos='https://cran.rstudio.com/')"
+
+# Modify existing rstudio user to match host UID/GID for better permissions
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+# Check if we need to modify the existing user/group
+RUN if [ "$(id -u rstudio)" != "$USER_ID" ] || [ "$(id -g rstudio)" != "$GROUP_ID" ]; then \
+        groupmod -g $GROUP_ID rstudio 2>/dev/null || true; \
+        usermod -u $USER_ID -g $GROUP_ID rstudio 2>/dev/null || true; \
+    fi
+
+# Create working directories and set ownership
+RUN mkdir -p /app/data /app/results /app/scripts && \
+    chown -R rstudio:rstudio /app
+
+# Create simple entrypoint script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'exec "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Set working directory
+WORKDIR /app
+
+# Expose data directories as volumes for external mounting
+VOLUME ["/app/data", "/app/results", "/app/scripts"]
+
+# Switch to rstudio user (now with correct UID/GID)
+USER rstudio
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["R", "--help"]
