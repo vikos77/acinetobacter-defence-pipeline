@@ -76,32 +76,60 @@ git clone https://github.com/vikos77/acinetobacter-defence-pipeline.git
 cd acinetobacter-defence-pipeline
 ```
 
-2. **Install Snakemake**
+2. **Choose your deployment method:**
+
+## Method 1: Conda Environment (Traditional)
+
+**Install Snakemake:**
 ```bash
-# 2.1 Create a new conda environment
+# Create a new conda environment
 conda create -n snakemake_env -c conda-forge -c bioconda snakemake
 
-# 2.2 Activate the environment
+# Activate the environment
 conda activate snakemake_env
 
-# 2.3 Test the installation
+# Test the installation
 snakemake --help
 ```
 
-3. **Configure your analysis:**
+**Configure and run:**
 ```bash
 # Edit the configuration file with your genome accessions
 nano config/config.yaml
-```
 
-4. **Run the complete pipeline:**
-```bash
 # Dry run to check workflow
 snakemake --dry-run
 
 # Execute with 8 cores
 snakemake --cores 8 --use-conda
+```
 
+## Method 2: Docker Containers (Recommended for Reproducibility)
+
+**Prerequisites (15 minutes):**
+```bash
+# Install Docker
+sudo apt-get update
+sudo apt-get install docker.io docker-compose
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+**Deployment (30-60 minutes depending on internet):**
+```bash
+# Build containers (only needs to be done once)
+./build_containers.sh
+```
+
+**Run Analysis (30 minutes - several hours depending on data):**
+```bash
+# Configure your analysis
+nano config/config.yaml
+
+# Run the pipeline
+snakemake --snakefile Snakefile.containerized --cores 8 --configfile config/config.yaml
 ```
 
 ### Configuration
@@ -141,7 +169,10 @@ rule run_defensefinder:
 ## Repository Structure
 
 ```
-├── Snakefile                      # Main workflow definition
+├── Snakefile                      # Main workflow definition (conda)
+├── Snakefile.containerized        # Docker workflow definition
+├── containers/                    # Docker container definitions
+├── build_containers.sh            # Container build script
 ├── config/
 │   ├── config.yaml               # Pipeline configuration
 │   └── samples.txt               # Genome accession list
@@ -158,6 +189,15 @@ rule run_defensefinder:
 └── docs/                         # Detailed documentation
 └── resources/                    # Databases and Downloaded genomes
 ```
+## Deployment Comparison
+
+| Feature | Conda | Docker |
+|---------|-------|--------|
+| **Setup Time** | 15 min | 60 min (one-time) |
+| **Reproducibility** | Good | Excellent |
+| **Portability** | Local | Universal |
+| **Maintenance** | Manual updates | Automated |
+| **Best For** | Development | Production/Publication |
 
 ## **Estimated Runtime**
 - **Single genome**: 5-7 minutes (depends on the genome size)
