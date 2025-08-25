@@ -17,7 +17,7 @@ This repository contains a production-ready **Snakemake workflow** that coordina
 
 ### **Scalable Architecture**
 - 1000+ genome analysis capability with automatic parallel processing
-- Multi-tool integration with dependency management via Conda
+- Multi-tool integration with dependency management via Conda or Docker
 - Modular design allowing individual component execution
 - Automated quality control and result consolidation
 
@@ -29,7 +29,7 @@ This repository contains a production-ready **Snakemake workflow** that coordina
 - **Statistical Framework**: Correlation analysis with multiple testing correction
 
 ### **Production-Ready Implementation**
-- Reproducible environments using Conda
+- Reproducible environments using Conda or Docker containers    
 - Error handling with retry logic for network operations
 - Resource optimization with configurable CPU/memory allocation
 - Automated data consolidation from individual tool outputs
