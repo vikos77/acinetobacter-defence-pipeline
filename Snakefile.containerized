@@ -101,7 +101,7 @@ rule download_genome:
             '
         """
 
-# Setup DefenseFinder models - replicate original comprehensive setup  
+# Setup DefenseFinder models
 rule setup_defensefinder_models:
     output:
         models_dir = directory("resources/defensefinder_models"),
