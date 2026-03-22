@@ -222,15 +222,17 @@ This pipeline enables researchers to:
 If you use this pipeline in your research, please cite:
 
 ```bibtex
-@article{muthuraman2025acinetobacter,
-  title={Adaptive trade-offs between niche-driven defence system selection and horizontal
-  gene transfer suggests clinical success in Acinetobacter spp},
-  author={Vigneshwaran Muthuraman, Proyash Roy, Paul Dean, Bruno Silvester Lopes,
-  Saadlee Shehreen},
-  year={2025},
-  journal={bioRxiv},
-  doi={10.1101/2025.08.01.668115},
-  url={https://www.biorxiv.org/content/10.1101/2025.08.01.668115v1}
+@article{muthuraman2026acinetobacter,
+  title={The balance between defence systems and horizontal gene transfer shapes
+  adaptation in clinical strains of Acinetobacter spp.},
+  author={Muthuraman, Vigneshwaran and Roy, Proyash and Dean, Paul and
+  Lopes, Bruno Silvester and Shehreen, Saadlee},
+  year={2026},
+  journal={Journal of Applied Microbiology},
+  volume={},
+  pages={lxag069},
+  doi={10.1093/jambio/lxag069},
+  url={https://doi.org/10.1093/jambio/lxag069}
 }
 ```
 
